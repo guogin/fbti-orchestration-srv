@@ -1,0 +1,15 @@
+---
+spring:
+  h2:
+    console:
+      enabled: off
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: off
+logging:
+  level:
+    com.sap.financial.fbti: DEBUG
+my:
+  destination:
+    name: <destination-name>

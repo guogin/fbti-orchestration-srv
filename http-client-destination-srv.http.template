@@ -1,0 +1,12 @@
+### Step0: Create and bind destination & XSUAA services to application
+### Step1: Read the environment variables under VCAP_SERVICES.destination.credentials
+### Step2: Request a JWT token to access the destination service
+POST <url>/oauth/token?grant_type=client_credentials&response_type=token
+Authorization: Basic <Base64 encoded clientid:clientsecret>
+Content-Type: application/x-www-form-urlencoded
+
+###
+
+### Step3: Search your destination in the destination service
+GET <uri>/destination-configuration/v1/destinations/<destination-name>
+Authorization: Bearer <JWT token>

@@ -1,0 +1,189 @@
+= FBTI Orchestration Service (prototype)
+
+This service subscribes to an event queue. When an event is received, it checks whether the event is relevant for tax posting. If the answer is YES, then it calls a tax interface via the SAP Destination service.
+
+== Prerequisites
+
+* JDK 8+
+
+== How to Build
+
+Clone the code and then run:
+
+[source,shell]
+----
+$ ./gradlew build
+----
+
+== How to Run
+
+[source,shell]
+----
+$ ./gradlew bootRun
+----
+
+== Setup
+=== Create Destination Service
+[source,shell]
+----
+$ cf create-service destination lite destsrv
+----
+=== Create XSUAA Service
+[source,shell]
+----
+$ cf create-service xsuaa application xsuaasrv
+----
+
+=== Deploy to Cloud Foundry
+
+Change the `application.name` in manifest.yml and then run
+
+[source,shell]
+----
+$ cf push
+----
+
+=== Subscribe to the Event Queue using Webhook
+
+==== Find Service Credentials
+[source,shell]
+----
+$ cf service-key ems-fbti-orche skey
+----
+
+In the output, take a note of the below values.
+
+[source,json]
+----
+{
+ "management": [ ],
+ "messaging": [
+  { },
+  { },
+  {
+   "broker": {
+    "type": "saprestmgw"
+   },
+   "oa2": {
+    "clientid": "<clientid>",
+    "clientsecret": "<clientsecret>",
+    "granttype": "client_credentials",
+    "tokenendpoint": "<tokenendpoint>"
+   },
+   "protocol": [
+    "httprest"
+   ],
+   "uri": "<uri>"
+  }
+ ],
+}
+----
+
+==== Obtain JWT Token
+[source,shell]
+----
+$ curl -X POST --location "https://simpletax.authentication.sap.hana.ondemand.com/oauth/token?grant_type=client_credentials&response_type=token" \
+    -H "Authorization: Basic <Base64 encoded clientid:clientsecret>"
+----
+
+==== Create Event Subscription
+
+Subscribe the deployed service to the fbti-staging queue, using webhook:
+
+[source,shell]
+----
+$ curl -X POST --location "https://enterprise-messaging-pubsub.cfapps.sap.hana.ondemand.com/sap/ems/v1/events/subscriptions" \
+    -H "Authorization: Bearer <JWT token>" \
+    -H "Content-Type: application/json" \
+    -d "{
+          \"name\": \"fbti-orche-webhook\",
+          \"qos\": \"AT_LEAST_ONCE\",
+          \"events\": [{
+            \"source\": \"/default/sap.fbti.orche/1\",
+            \"type\": \"sap.fbti.orche.GoodsMovement.Created.v1\"
+          }],
+          \"webhookUrl\": \"<URL of this webhook app>"
+        }"
+----
+
+==== Verify Event Subscription
+
+[source,shell]
+----
+$ curl -X GET --location "https://enterprise-messaging-pubsub.cfapps.sap.hana.ondemand.com/sap/ems/v1/events/subscriptions/" \
+    -H "Content-Type: application/cloudevents+json" \
+    -H "Authorization: Bearer <JWT token>"
+----
+
+== How to Use
+
+=== Post Event
+
+Post an event to the first event queue, using the below command. Then the deployed service will receive this event via webhook. The event will be shown in both database and application log. And then the event will be automatically published to the second event queue.
+
+[source,shell]
+----
+$ curl -X POST --location "https://enterprise-messaging-pubsub.cfapps.sap.hana.ondemand.com/sap/ems/v1/events" \
+    -H "Content-Type: application/cloudevents+json" \
+    -H "Authorization: Bearer <JWT token>" \
+    -H "qos: AT_LEAST_ONCE" \
+    -d "{
+          \"specversion\": \"1.0\",
+          \"source\": \"/default/sap.fbti.stage/1\",
+          \"type\": \"sap.fbti.stage.GoodsMovement.Created.v1\",
+          \"id\": \"05022092-B698-444E-9F8B-A0B4605F163C\",
+          \"datacontenttype\": \"application/json\",
+          \"data\": {
+            \"property\": \"value\"
+          }
+        }"
+----
+
+=== View Event History
+
+Visit <app-url>
+
+=== Update Status of an Event to Processed
+
+[source,shell]
+----
+$ curl -X PUT --location "http://<app-url>/api/event/1/processed" \
+    -H "Content-Type: application/json"
+----
+
+== Run in Local Development Environment
+
+=== Modify the applications.yml
+
+Update the below section, according to the environment variable `VCAP_SERVICES` of your deployed application.
+
+[source,yaml]
+----
+my:
+  event-mesh:
+    namespace: <namespace>
+    credentials:
+      oa2:
+        clientid: <clientid>
+        clientsecret: <clientsecret>
+        granttype: client_credentials
+        tokenendpoint: <tokenendpoint>
+      protocol: httprest
+      uri: <uri>
+----
+
+=== Set Active Profile to 'dev'
+
+[cols="<,<"]
+|===
+|Environment Variable |Value 
+
+|SPRING_PROFILES_ACTIVE |dev 
+|===
+
+For example, run below command before you run the application.
+
+[source,shell]
+----
+$ export SPRING_PROFILES_ACTIVE=dev
+----
