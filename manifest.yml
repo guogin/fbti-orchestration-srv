@@ -8,6 +8,7 @@ applications:
     env:
       JBP_CONFIG_SPRING_AUTO_RECONFIGURATION: '{enabled: false}'
       SPRING_PROFILES_ACTIVE: cloud
+      MY_DESTINATION_NAME: <http-destination-name>
     services:
       - destsrv
       - xsuaasrv
