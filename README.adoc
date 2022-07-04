@@ -33,6 +33,11 @@ $ cf create-service destination lite destsrv
 ----
 $ cf create-service xsuaa application xsuaasrv
 ----
+=== Create Connectivity Service
+[source,shell]
+----
+$ cf create-service connectivity lite connsrv
+----
 === Create HTTP Destination
 You need at least one configured http destination, otherwise there will be nothing to retrieve via the service.
 
@@ -109,7 +114,7 @@ Subscribe the deployed service to the fbti-staging queue, using webhook:
 
 [source,shell]
 ----
-curl -X POST --location "https://enterprise-messaging-pubsub.cfapps.sap.hana.ondemand.com/sap/ems/v1/events/subscriptions" \
+$ curl -X POST --location "https://enterprise-messaging-pubsub.cfapps.sap.hana.ondemand.com/sap/ems/v1/events/subscriptions" \
     -H "Authorization: Bearer <JWT token>" \
     -H "Content-Type: application/json" \
     -d "{
