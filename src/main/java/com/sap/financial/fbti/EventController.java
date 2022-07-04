@@ -3,6 +3,7 @@ package com.sap.financial.fbti;
 import com.sap.cloud.sdk.cloudplatform.connectivity.DestinationAccessor;
 import com.sap.cloud.sdk.cloudplatform.connectivity.HttpClientAccessor;
 import com.sap.cloud.sdk.cloudplatform.connectivity.HttpDestination;
+import com.sap.cloud.sdk.s4hana.connectivity.DefaultErpHttpDestination;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.format.EventFormat;
 import io.cloudevents.core.provider.EventFormatProvider;
@@ -29,7 +30,7 @@ public class EventController {
         log.debug("Event received:\n" + request);
 
         final String destinationName = destinationConfigurationProperties.getName();
-        HttpDestination destination = DestinationAccessor.getDestination(destinationName).asHttp();
+        HttpDestination destination = DestinationAccessor.getDestination(destinationName).asHttp().decorate(DefaultErpHttpDestination::new);
         log.debug("Destination '{}' is retrieved", destinationName);
         log.debug("Destination URI: {}", destination.getUri());
 
