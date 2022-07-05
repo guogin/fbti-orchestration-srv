@@ -143,3 +143,5 @@ $ curl -X GET \
 
 == How to Use
 If you post an event to the https://github.wdf.sap.corp/I061761/fbti-staging-srv[Staging Service], the event will be forwared to the https://github.wdf.sap.corp/I061761/fbti-orchestration-srv[Orchestration Service]. And the API defined by HTTP destination will be called.
+
+You run script `send-event.py` to send event to the staging queue. Remember to change the variables before you use the script.
