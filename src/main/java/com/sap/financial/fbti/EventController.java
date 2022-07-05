@@ -10,10 +10,19 @@ import io.cloudevents.core.provider.EventFormatProvider;
 import io.cloudevents.jackson.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 
 @RestController
 @AllArgsConstructor
@@ -25,7 +34,7 @@ public class EventController {
             EventFormatProvider.getInstance().resolveFormat(JsonFormat.CONTENT_TYPE);
 
     @PostMapping(value = "/")
-    public ResponseEntity<String> handleEvent(@RequestBody CloudEvent event) {
+    public ResponseEntity<String> handleEvent(@RequestBody CloudEvent event) throws IOException {
         String request = stringify(event);
         log.debug("Event received:\n" + request);
 
@@ -35,7 +44,19 @@ public class EventController {
         log.debug("Destination URI: {}", destination.getUri());
 
         HttpClient httpClient = HttpClientAccessor.getHttpClient(destination);
+        HttpGet httpGet = new HttpGet(destination.getUri());
 
+        HttpResponse response = httpClient.execute(httpGet);
+        if (response.getStatusLine().getStatusCode() == 200) {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+            StringBuilder result = new StringBuilder();
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+                result.append(line);
+            }
+            reader.close();
+            log.debug("Response: {}", result);
+        }
 
         return ResponseEntity.noContent().build();
     }
