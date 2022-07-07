@@ -38,6 +38,12 @@ $ cf create-service xsuaa application xsuaasrv
 ----
 $ cf create-service connectivity lite connsrv
 ----
+
+== Integrate with S/4HANA Public Cloud System
+If you have your target tax interface available in public internet, you could configure the interface endpoint using _HTTP Destination_ as described below.
+
+If you have your tax interface published in S/4HANA Public Cloud system, you need to make sure the system is available in public internet. In a development landscape, it has to be a D-Lab or V-Lab system. Otherwise the system is only not reachable in the internet.
+
 === Create HTTP Destination
 You need at least one configured http destination, otherwise there will be nothing to retrieve via the service.
 
@@ -47,11 +53,67 @@ To create an HTTP destination from scratch, follow the steps in https://help.sap
 
 === Configure Destination Name
 Now change `my.destination.name` in application.yml
+
+.application.yml
 [source,yaml]
 ----
 my:
   destination:
     name: <http-destination-name>
+----
+
+=== Integrate with S/4HANA on-Premise Systems
+If you have your target tax interface in S/4HANA OP system, you will need both _Connectivity_ + _Destination_ services on BTP. Plus you will need _SAP Cloud Connector_ in the same network of the target OP system.
+
+In a development landscape, you must use the _https://shared-scc.wdf.sap.corp:8443[DLM Shared Cloud Connector]_. It won't be able to access the target system (e.g. ER9) if you install SAP Cloud Connector in your local computer.
+
+After you logged-in the _DLM Shared Cloud Connector_, please configure your sub-account and _Cloud To On-Premise_ connection according to the configuration below.
+
+.account_config.json
+[source,json]
+----
+{
+    "backends": [
+        {
+            "allowedClients": [],
+            "authMode": "NONE",
+            "backendType": "abapSys",
+            "blacklistedUser": [],
+            "cloudHost": "<virtual-host>",
+            "cloudPort": "443",
+            "description": "",
+            "hostInHeader": "internal",
+            "localHost": "<hostname>.wdf.sap.corp",
+            "localPort": "44300",
+            "protocol": "HTTPS",
+            "resources": [
+                {
+                    "description": "",
+                    "enabled": true,
+                    "exactMatchOnly": false,
+                    "fromScenarioOnly": false,
+                    "path": "/",
+                    "websocketUpgradeAllowed": false
+                }
+            ]
+        }
+    ]
+}
+----
+
+And you need to configure the destination as following.
+
+[source,properties]
+----
+#Password=<< Existing password/certificate removed on export >>
+#
+URL=http\://<virtual-host>\:443/sap/opu/odata/sap/ODATA_SERVICE
+Name=<dev-system-id>
+ProxyType=OnPremise
+Type=HTTP
+Authentication=BasicAuthentication
+User=<your-abap-system-user>
+
 ----
 
 === Deploy to Cloud Foundry
@@ -144,4 +206,4 @@ $ curl -X GET \
 == How to Use
 If you post an event to the https://github.wdf.sap.corp/I061761/fbti-staging-srv[Staging Service], the event will be forwared to the https://github.wdf.sap.corp/I061761/fbti-orchestration-srv[Orchestration Service]. And the API defined by HTTP destination will be called.
 
-You run script `send-event.py` to send event to the staging queue. Remember to change the variables before you use the script.
+You may run script `send-event.py` to send event to the staging queue. Remember to change the variables before you use the script.
