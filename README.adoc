@@ -62,7 +62,7 @@ my:
     name: <http-destination-name>
 ----
 
-=== Integrate with S/4HANA on-Premise Systems
+== Integrate with S/4HANA on-Premise Systems
 If you have your target tax interface in S/4HANA OP system, you will need both _Connectivity_ + _Destination_ services on BTP. Plus you will need _SAP Cloud Connector_ in the same network of the target OP system.
 
 In a development landscape, you must use the _https://shared-scc.wdf.sap.corp:8443[DLM Shared Cloud Connector]_. It won't be able to access the target system (e.g. ER9) if you install SAP Cloud Connector in your local computer.
